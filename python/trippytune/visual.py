@@ -16,7 +16,7 @@ class Visual:
 
 class Trippy(Visual):
 
-    def __init__(self, rng_seed=None, fps=60, packed_phase_movie=None, tex_size=(160, 90), nodes=(12, 6), up_factor=24,
+    def __init__(self, rng_seed=0, fps=60, packed_phase_movie=None, tex_size=(160, 90), nodes=(12, 6), up_factor=24,
                  duration=15, temp_freq=4.0, temp_kernel_length=61, spatial_freq=0.08):
         """
         :param rng_seed:  random number generator seed
@@ -31,12 +31,20 @@ class Trippy(Visual):
         :param spatial_freq: (cy/point) approximate max spatial frequency. Actual frequencies may be higher.
         """
 
-        if packed_phase_movie is None:
-            raise TypeError('packed_phase_movie is required at this point. RNG seed is ignored')
-        
-        self.rng_seed = rng_seed
+        if packed_phase_movie is not None:
+            self.packed_phase_movie = packed_phase_movie
+            self.rng_seed = None  # override if the packed movie is provided
+        else:
+            self.rng_seed = rng_seed
+            np.random.seed(np.uint64(rng_seed))
+            assert temp_kernel_length >= 3 and temp_kernel_length % 2 == 1
+            nframes = np.ceil(duration * np.float32(fps))
+            k2 = np.ceil(temp_kernel_length / 4)
+            compensator = 8.0
+            scale = compensator * up_factor * spatial_freq
+            self.packed_phase_movie = (
+                    scale * np.random.rand(int(np.ceil((nframes + temp_kernel_length - 1) / k2)), nodes[0] * nodes[1]))
         self.fps = fps
-        self.packed_phase_movie = packed_phase_movie
         self.tex_size = list(tex_size)
         self.nodes = list(nodes)
         self.up_factor = up_factor
@@ -44,8 +52,22 @@ class Trippy(Visual):
         self.temp_freq = temp_freq
         self.temp_kernel_length = temp_kernel_length
         self.spatial_freq = spatial_freq
-
         self._phase_movie = None
+
+    @staticmethod
+    def from_condition(cond):
+        # construct from a stimulus condition in the Cajal database
+        return Trippy(
+            **{k: v for k, v in cond.items() if k in {
+                'fps', 'rng_seed', 'packed_phase_movie', 'up_factor', 'temp_freq',
+                'temp_kernel_length', 'duration', 'spatial_freq'}},
+            tex_size=(cond['tex_xdim'], cond['tex_ydim']),
+            nodes=(cond['xnodes'], cond['ynodes']))
+
+    def __hash__(self):
+        return hash(
+            (self.packed_phase_movie.tobytes(), self.fps, tuple(self.tex_size), tuple(self.nodes), self.up_factor,
+             self.duration, self.temp_freq, self.temp_kernel_length, self.spatial_freq))
 
     @staticmethod
     def upsample(array, factor, axis=0, phase=0):
@@ -103,6 +125,9 @@ class Trippy(Visual):
         return self._phase_movie
 
     @property
-    def intensity_movie(self):
+    def movie(self):
+        """
+        :return: final result presented on the screen
+        """
         return np.uint8(np.cos(self.phase_movie)*127.5+128)
 

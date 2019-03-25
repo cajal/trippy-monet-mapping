@@ -1,16 +1,13 @@
+import random
 import trippytune
 from stimulus import stimulus
 
-cond_key = (stimulus.Trippy &
-            (stimulus.Trial & 'animal_id in (20505, 20322, 20457, 20210, 20892)')).head(limit=1, as_dict=True)[0]
+# verify against some stimuli generated in experiments
 
-trippy = trippytune.Trippy(
-    **{k: v for k, v in cond_key.items() if k in {
-        'fps', 'rng_seed', 'packed_phase_movie', 'up_factor', 'temp_freq',
-        'temp_kernel_length', 'duration', 'spatial_freq'}},
-    tex_size=(cond_key['tex_xdim'], cond_key['tex_ydim']),
-    nodes=(cond_key['xnodes'], cond_key['ynodes']))
+cond_key = random.choice(
+    (stimulus.Trippy & (stimulus.Trial & 'animal_id in (20505, 20322, 20457, 20210, 20892)')).fetch('KEY'))
+cond = (stimulus.Trippy & cond_key).fetch1()
 
-m = trippy.compute_phase_movie()
+trippy = trippytune.Trippy.from_condition(cond)
 
-print(type(m))
+assert 0 == abs(trippy.movie - cond['movie']).max(), "Python implementation diverged from MATLAB"
