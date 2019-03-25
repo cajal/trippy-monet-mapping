@@ -1,18 +1,11 @@
 
 
-class StimulusMovie:
+
+
+class VisualSession:
     """
-    Abstract stimulus movie
+    A collection of movie clips synchronized with a collection of neural signals
     """
-
-    def get_intensity_frame(self, frame):
-        """
-        :param frame: number (can be fractional)
-        :return: intensity frame corresponding to time
-        """
-
-
-class Session:
 
     def __init__(self, traces, times):
         """
@@ -23,7 +16,7 @@ class Session:
         self.times = times
         self.trials = []  # list of pairs (StimulusMovie, timestamps)
 
-    def add_trial(self, stimulus_movie: StimulusMovie, frame_times):
+    def add_trial(self, stimulus_movie: StimulusClip, frame_times):
         """
         :param stimulus_movie: an object of type StimulusMovie
         :param frame_times: (s) array of size (T,)

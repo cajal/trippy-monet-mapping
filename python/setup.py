@@ -27,6 +27,6 @@ setup(
         'License :: OSI Approved :: GNU LGPL',
         'Topic :: Database :: Front-Ends',
     ],
-    scripts=['scripts/populate-minion.py']
+    scripts=['scripts/test_trippy_tune.py']
 )
 
