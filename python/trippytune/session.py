@@ -1,5 +1,4 @@
-
-
+from .visual import Visual
 
 
 class VisualSession:
@@ -16,7 +15,7 @@ class VisualSession:
         self.times = times
         self.trials = []  # list of pairs (StimulusMovie, timestamps)
 
-    def add_trial(self, stimulus_movie: StimulusClip, frame_times):
+    def add_trial(self, stimulus_movie: Visual, frame_times):
         """
         :param stimulus_movie: an object of type StimulusMovie
         :param frame_times: (s) array of size (T,)

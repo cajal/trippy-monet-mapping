@@ -31,19 +31,21 @@ class Trippy(Visual):
         :param spatial_freq: (cy/point) approximate max spatial frequency. Actual frequencies may be higher.
         """
 
-        if not packed_phase_movie:
+        if packed_phase_movie is None:
             raise TypeError('packed_phase_movie is required at this point. RNG seed is ignored')
         
         self.rng_seed = rng_seed
         self.fps = fps
         self.packed_phase_movie = packed_phase_movie
-        self.tex_size = tex_size
-        self.nodes = nodes
+        self.tex_size = list(tex_size)
+        self.nodes = list(nodes)
         self.up_factor = up_factor
         self.duration = duration
         self.temp_freq = temp_freq
         self.temp_kernel_length = temp_kernel_length
         self.spatial_freq = spatial_freq
+
+        self._phase_movie = None
 
     @staticmethod
     def upsample(array, factor, axis=0, phase=0):
@@ -69,6 +71,8 @@ class Trippy(Visual):
     @staticmethod
     def frozen_upscale(img, factor, axis):
         """
+        Upscale image efficiently. This function is designated as frozen because changes in its function
+        will make some results backward incompatible.
         :param img: 2d image
         :param factor: upscale factor
         :param axis: axis to upscale
@@ -82,15 +86,23 @@ class Trippy(Visual):
         k = k.reshape([1] * axis + list(k.shape) + [1] * (img.ndim - 1 - axis))
         return np.real(np.fft.ifft(np.fft.fft(img, axis=axis) * k, axis=axis))
 
-    def compute_phase_movie(self):
+    @property
+    def phase_movie(self):
         """
-        Compute the phase movie from packed phase_movie
+        Reconstruct the phase movie from packed_phase_movie.
         """
-        phase = Trippy.interp_time(
-            packed_phase_movie=self.packed_phase_movie, temp_kernel_length=self.temp_kernel_length,
-            duration=self.duration, temp_freq=self.temp_freq)
-        movie = np.rollaxis(phase.reshape([phase.shape[0]] + self.nodes[::-1], order='F'), 0, 3)
-        movie = Trippy.frozen_upscale(movie, self.up_factor, axis=1)
-        movie = Trippy.frozen_upscale(movie, self.up_factor, axis=0)
-        return 2 * np.pi * movie[:self.tex_size[1], :self.tex_size[0], :]
+        if self._phase_movie is None:
+            phase = Trippy.interp_time(
+                packed_phase_movie=self.packed_phase_movie, temp_kernel_length=self.temp_kernel_length, fps=self.fps,
+                duration=self.duration, temp_freq=self.temp_freq)
+            movie = np.rollaxis(phase.reshape([phase.shape[0]] + self.nodes[::-1], order='F'), 0, 3)
+            movie = Trippy.frozen_upscale(movie, self.up_factor, axis=1)
+            movie = Trippy.frozen_upscale(movie, self.up_factor, axis=0)
+            self._phase_movie = 2 * np.pi * movie[:self.tex_size[1], :self.tex_size[0], :]
+
+        return self._phase_movie
+
+    @property
+    def intensity_movie(self):
+        return np.uint8(np.cos(self.phase_movie)*127.5+128)
 

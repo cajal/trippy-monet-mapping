@@ -1,7 +1,7 @@
 
 
-__all__ = ['VisualSession']
+__all__ = ['VisualSession', 'Trippy']
 
 
-from .stimulus import VisualSession
+from .session import VisualSession
 from .visual import Trippy
