@@ -8,7 +8,7 @@ long_description = "Synthesis and analysis of visual stimuli Monet and Trippy fo
 
 
 setup(
-    name='trippytune',
+    name='monet_trippy',
     version='0.1.0',
     description="Monet and Trippy stimuli: synthesis and analysis.",
     long_description=long_description,
