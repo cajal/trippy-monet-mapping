@@ -7,14 +7,18 @@ class Visual:
     Abstract stimulus movie
     """
 
-    def get_intensity_frame(self, frame):
-        """
-        :param frame: number (can be fractional)
-        :return: intensity frame corresponding to time
-        """
+    @classmethod
+    def clear_cache(cls):
+        raise NotImplementedError("This method must be implemented in the subclass")
+
+    @property
+    def movie(self):
+        raise NotImplementedError("This property must be implemented in the subclass")
 
 
 class Trippy(Visual):
+    
+    _cached = {}
 
     def __init__(self, rng_seed=0, fps=60, packed_phase_movie=None, tex_size=(160, 90), nodes=(12, 6), up_factor=24,
                  duration=15, temp_freq=4.0, temp_kernel_length=61, spatial_freq=0.08):
@@ -54,9 +58,14 @@ class Trippy(Visual):
         self.spatial_freq = spatial_freq
         self._phase_movie = None
 
+    @classmethod
+    def clear_cache(cls):
+        cls._cached.clear()
+
     @staticmethod
     def from_condition(cond):
         # construct from a stimulus condition in the Cajal database
+        assert cond['stimulus_version'] == '2', "This code matches only Trippy version 2."
         return Trippy(
             **{k: v for k, v in cond.items() if k in {
                 'fps', 'rng_seed', 'packed_phase_movie', 'up_factor', 'temp_freq',
@@ -64,13 +73,8 @@ class Trippy(Visual):
             tex_size=(cond['tex_xdim'], cond['tex_ydim']),
             nodes=(cond['xnodes'], cond['ynodes']))
 
-    def __hash__(self):
-        return hash(
-            (self.packed_phase_movie.tobytes(), self.fps, tuple(self.tex_size), tuple(self.nodes), self.up_factor,
-             self.duration, self.temp_freq, self.temp_kernel_length, self.spatial_freq))
-
     @staticmethod
-    def upsample(array, factor, axis=0, phase=0):
+    def _upsample(array, factor, axis=0, phase=0):
         """
         Upsamples arrays by factor along axis, filling with zeros.
         Emulates MATLAB upsample.
@@ -79,10 +83,10 @@ class Trippy(Visual):
             array, factor, 1, window=[0] * phase * 2 + [1 / factor], axis=axis)
 
     @staticmethod
-    def interp_time(packed_phase_movie, temp_kernel_length, duration, fps, temp_freq):
+    def _interp_time(packed_phase_movie, temp_kernel_length, duration, fps, temp_freq):
         assert temp_kernel_length >= 3 and temp_kernel_length % 2 == 1
         k2 = int(np.ceil(temp_kernel_length / 4))
-        phase = Trippy.upsample(packed_phase_movie, k2)
+        phase = Trippy._upsample(packed_phase_movie, k2)
         temp_kernel = np.hanning(temp_kernel_length + 2)[1:-1]
         temp_kernel *= k2 / temp_kernel.sum()
         phase = signal.convolve(phase, temp_kernel[:, None], 'valid')  # lowpass in time
@@ -91,7 +95,7 @@ class Trippy(Visual):
         return phase + (np.r_[:nframes][:, None] + 1) / np.float(fps) * np.float(temp_freq)  # add motion
 
     @staticmethod
-    def frozen_upscale(img, factor, axis):
+    def _frozen_upscale(img, factor, axis):
         """
         Upscale image efficiently. This function is designated as frozen because changes in its function
         will make some results backward incompatible.
@@ -100,7 +104,7 @@ class Trippy(Visual):
         :param axis: axis to upscale
         :return: full-size movie image
         """
-        img = Trippy.upsample(img, factor, axis, phase=factor // 2)
+        img = Trippy._upsample(img, factor, axis, phase=factor // 2)
         length = img.shape[axis]
         sigma = (length - 1) / (2 * np.sqrt(0.5) * length / factor)
         k = signal.gaussian(length, sigma)
@@ -113,16 +117,17 @@ class Trippy(Visual):
         """
         Reconstruct the phase movie from packed_phase_movie.
         """
-        if self._phase_movie is None:
-            phase = Trippy.interp_time(
+        state = (self.packed_phase_movie.tobytes(), self.fps, tuple(self.tex_size), tuple(self.nodes), self.up_factor,
+                 self.duration, self.temp_freq, self.temp_kernel_length, self.spatial_freq)
+        if state not in self._cached:
+            phase = Trippy._interp_time(
                 packed_phase_movie=self.packed_phase_movie, temp_kernel_length=self.temp_kernel_length, fps=self.fps,
                 duration=self.duration, temp_freq=self.temp_freq)
             movie = np.rollaxis(phase.reshape([phase.shape[0]] + self.nodes[::-1], order='F'), 0, 3)
-            movie = Trippy.frozen_upscale(movie, self.up_factor, axis=1)
-            movie = Trippy.frozen_upscale(movie, self.up_factor, axis=0)
-            self._phase_movie = 2 * np.pi * movie[:self.tex_size[1], :self.tex_size[0], :]
-
-        return self._phase_movie
+            movie = Trippy._frozen_upscale(movie, self.up_factor, axis=1)
+            movie = Trippy._frozen_upscale(movie, self.up_factor, axis=0)
+            self.__class__._cached[state] = 2 * np.pi * movie[:self.tex_size[1], :self.tex_size[0], :]
+        return self._cached[state]
 
     @property
     def movie(self):
@@ -130,4 +135,13 @@ class Trippy(Visual):
         :return: final result presented on the screen
         """
         return np.uint8(np.cos(self.phase_movie)*127.5+128)
+
+
+class Monet2(Visual):
+
+    cached_ = {}
+
+    @classmethod
+    def clear_cache(cls):
+        cls._cached.clear()
 
