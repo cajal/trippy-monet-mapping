@@ -45,6 +45,7 @@ class Trippy(Visual):
         :param temp_kernel_length: length of Hanning kernel used for temporal filtering of the phase movie
         :param spatial_freq: (cy/point) approximate max spatial frequency. Actual frequencies may be higher.
         """
+        self.nframes = int(np.ceil(duration * np.float32(fps)))
         if packed_phase_movie is not None:
             self.packed_phase_movie = packed_phase_movie
             self.rng_seed = None  # override if the packed movie is provided
@@ -52,13 +53,12 @@ class Trippy(Visual):
             self.rng_seed = rng_seed
             np.random.seed(np.uint64(rng_seed))
             assert temp_kernel_length >= 3 and temp_kernel_length % 2 == 1
-            nframes = np.ceil(duration * np.float32(fps))
             k2 = np.ceil(temp_kernel_length / 4)
             compensator = 8.0
             scale = compensator * up_factor * spatial_freq
             self.packed_phase_movie = (
-                    scale * np.random.rand(int(np.ceil((nframes + temp_kernel_length - 1) / k2)), nodes[0] * nodes[1]))
-        self.fps = fps
+                    scale * np.random.rand(int(np.ceil((self.nframes + temp_kernel_length - 1) / k2)), nodes[0] * nodes[1]))
+        self.fps = float(fps)
         self.tex_size = list(tex_size)
         self.nodes = list(nodes)
         self.up_factor = up_factor
@@ -72,11 +72,11 @@ class Trippy(Visual):
     def clear_cache(cls):
         cls._cached.clear()
 
-    @staticmethod
-    def from_condition(cond):
+    @classmethod
+    def from_condition(cls, cond):
         # construct from a stimulus condition in the Cajal database
         assert cond['stimulus_version'] == '2', "This code matches only Trippy version 2."
-        return Trippy(
+        return cls(
             **{k: v for k, v in cond.items() if k in {
                 'fps', 'rng_seed', 'packed_phase_movie', 'up_factor', 'temp_freq',
                 'temp_kernel_length', 'duration', 'spatial_freq'}},

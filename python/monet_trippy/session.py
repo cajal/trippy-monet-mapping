@@ -8,13 +8,11 @@ class VisualSession:
     A collection of movie clips synchronized with a collection of neural signals
     """
 
-    def __init__(self, traces, times):
+    def __init__(self, traces: np.ndarray, times: np.ndarray):
         """
         :param traces: array of size (T,) or (N, T) array where T = number of time samples, N = number of units
         :param times: array of size (T,) or (N, T) with sample times of the traces
         """
-        if not isinstance(traces, np.ndarray) or not isinstance(times, np.ndarray):
-            raise TypeError('Inputs must be of type numpy.ndarray')
         if traces.ndim == 1:
             traces = traces[None, :]
         if times.ndim == 1:
@@ -23,8 +21,9 @@ class VisualSession:
             raise TypeError('The number of samples in the traces does not match the number of timestamps')
         self.traces = traces
         self.times = times
+        self.trials = []
 
-    def add_trial(self, stimulus_movie: Visual, frame_times):
+    def add_trial(self, stimulus_movie: Visual, frame_times: np.ndarray):
         """
         :param stimulus_movie: an object of type StimulusMovie
         :param frame_times: (s) array of size (T,)
