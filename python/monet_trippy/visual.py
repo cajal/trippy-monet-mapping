@@ -6,7 +6,6 @@ class Visual:
     """
     Abstract stimulus movie
     """
-
     @classmethod
     def clear_cache(cls):
         raise NotImplementedError("This method must be implemented in the subclass")
@@ -46,7 +45,6 @@ class Trippy(Visual):
         :param temp_kernel_length: length of Hanning kernel used for temporal filtering of the phase movie
         :param spatial_freq: (cy/point) approximate max spatial frequency. Actual frequencies may be higher.
         """
-
         if packed_phase_movie is not None:
             self.packed_phase_movie = packed_phase_movie
             self.rng_seed = None  # override if the packed movie is provided
