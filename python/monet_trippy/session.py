@@ -1,7 +1,7 @@
 import numpy as np
+from skimage import transform
 
 from .visual import Visual
-
 
 class VisualSession:
     """
@@ -30,4 +30,22 @@ class VisualSession:
         """
         if stimulus_movie.nframes != frame_times.size:
             raise IndexError('frame times must match stimulus movie')
-        self.trials.append((stimulus_movie, frame_times))
+        self.trials.append({'stimulus': stimulus_movie, 'times': frame_times})
+
+    def compute_receptive_field(self, shape=None, temp_band=4.0, latency=0.15):
+        """
+        :param shape: (ny, nx) image dimensions. If None, use movie dimensions from the first
+        :param temp_band: (Hz) temporal bandwidth of signal interpolation
+        :param latency: (s) the delay at which to measure neural signals since the stimulus.
+        :param latency: (s) the delay at which to measure neural signals since the stimulus.
+        :return: (N, ny, nx) np.ndarray of correlations
+        """
+        if not self.trials:
+            raise TypeError('No trials. Use VisualSession.add_trial to add trials')
+
+        if shape is None:
+            shape = self.trials[0]['stimulus'].movie.shape[:2]
+
+        for t in self.trials:
+            return t
+
