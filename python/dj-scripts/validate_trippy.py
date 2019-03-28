@@ -22,4 +22,4 @@ print('compare movies')
 assert 0 == abs(trippy.movie - movie_from_database).max(),  "Python diverged from MATLAB"
 
 print('save movie as mp4')
-trippy.save()
+trippy.export()

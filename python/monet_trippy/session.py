@@ -1,5 +1,10 @@
 import numpy as np
+import os
+import pickle
+import hashlib
+
 from skimage import transform
+
 
 from .visual import Visual
 
@@ -20,17 +25,39 @@ class VisualSession:
         if traces.shape[1] != times.shape[1]:
             raise TypeError('The number of samples in the traces does not match the number of timestamps')
         self.traces = traces
-        self.times = times
+        self.start_time = times.min()
+        self.times = times - self.start_time
         self.trials = []
 
-    def add_trial(self, stimulus_movie: Visual, frame_times: np.ndarray):
+    def save(self, folder):
+        os.makedirs(folder, exist_ok=True)
+        trial_folder = os.path.join(folder, 'trials')
+        stim_folder = os.path.join(folder, 'stims')
+        os.path.isdir(trial_folder) or os.mkdir(trial_folder)
+        os.path.isdir(stim_folder) or os.mkdir(stim_folder)
+
+        # save traces and times
+        np.savez(os.path.join(folder, 'traces.npz'), traces=self.traces, times=self.times)
+        # save trials
+        for trial in self.trials:
+            stim_class = trial['stimulus'].__class__.__name__
+            params = trial['stimulus'].params
+            stim_hash = hashlib.md5(pickle.dumps([v for k, v in sorted(params.items())])).hexdigest()[:8]
+            np.savez(os.path.join(trial_folder, 'trial-%08.3f.npz' % trial['times'][0]),
+                     times=trial['times'],
+                     stim_class=stim_class,
+                     stim_hash=stim_hash)
+            np.savez(os.path.join(stim_folder, 'stim-{stim_class}-{stim_hash}'.format(
+                stim_class=stim_class, stim_hash=stim_hash)), params)
+
+    def add_trial(self, stimulus: Visual, frame_times: np.ndarray):
         """
-        :param stimulus_movie: an object of type StimulusMovie
+        :param stimulus: an object of type StimulusMovie
         :param frame_times: (s) array of size (T,)
         """
-        if stimulus_movie.nframes != frame_times.size:
+        if stimulus.nframes != frame_times.size:
             raise IndexError('frame times must match stimulus movie')
-        self.trials.append({'stimulus': stimulus_movie, 'times': frame_times})
+        self.trials.append({'stimulus': stimulus, 'times': frame_times - self.start_time})
 
     def compute_receptive_field(self, shape=None, temp_band=4.0, latency=0.15):
         """
@@ -48,4 +75,3 @@ class VisualSession:
 
         for t in self.trials:
             return t
-

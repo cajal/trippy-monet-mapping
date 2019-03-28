@@ -35,11 +35,10 @@ else:
 frame_times = np.add.outer(ms_delay / 1000, frame_times)  # num_traces x num_frames
 
 print('create Trippy session and load trials')
-trippy_session = mt.VisualSession(np.stack(traces), frame_times)
+session = mt.VisualSession(np.stack(traces), frame_times)
 for trial in (stimulus.Trial * stimulus.Condition * stimulus.Trippy & key).proj(..., '- movie'):
-    trippy_session.add_trial(mt.Trippy.from_condition(trial), trial['flip_times'].flatten())
+    session.add_trial(mt.Trippy.from_condition(trial), trial['flip_times'].flatten())
 
-print('compute receptive fields')
-rf = trippy_session.compute_receptive_field()
-
-print('Done')
+folder = os.path.join(os.path.abspath('..'), 'data', 'sessions', dj.hash.key_hash(key)[:6])
+print('save session', folder)
+session.save(folder)

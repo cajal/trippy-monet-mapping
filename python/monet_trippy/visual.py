@@ -1,5 +1,6 @@
 from scipy import signal
 import numpy as np
+import hashlib, pickle
 
 
 class Visual:
@@ -17,7 +18,7 @@ class Visual:
         """
         raise NotImplementedError("This property must be implemented in the subclass")
 
-    def save(self, filename=None, suffix='', **kwargs):
+    def export(self, filename=None, suffix='', **kwargs):
         """
         save as an mp4 file
         """
@@ -28,8 +29,6 @@ class Visual:
 
 
 class Trippy(Visual):
-
-    _cached = {}
 
     def __init__(self, rng_seed=0, fps=60, packed_phase_movie=None, tex_size=(176, 96), nodes=(12, 6), up_factor=24,
                  duration=15, temp_freq=4.0, temp_kernel_length=61, spatial_freq=0.08):
@@ -66,11 +65,9 @@ class Trippy(Visual):
         self.temp_freq = temp_freq
         self.temp_kernel_length = temp_kernel_length
         self.spatial_freq = spatial_freq
+
         self._phase_movie = None
 
-    @classmethod
-    def clear_cache(cls):
-        cls._cached.clear()
 
     @classmethod
     def from_condition(cls, cond):
@@ -127,17 +124,29 @@ class Trippy(Visual):
         """
         Reconstruct the phase movie from packed_phase_movie.
         """
-        state = (self.packed_phase_movie.tobytes(), self.fps, tuple(self.tex_size), tuple(self.nodes), self.up_factor,
-                 self.duration, self.temp_freq, self.temp_kernel_length, self.spatial_freq)
-        if state not in self._cached:
-            phase = Trippy._interp_time(
-                packed_phase_movie=self.packed_phase_movie, temp_kernel_length=self.temp_kernel_length, fps=self.fps,
-                duration=self.duration, temp_freq=self.temp_freq)
-            movie = np.rollaxis(phase.reshape([phase.shape[0]] + self.nodes[::-1], order='F'), 0, 3)
-            movie = Trippy._frozen_upscale(movie, self.up_factor, axis=1)
-            movie = Trippy._frozen_upscale(movie, self.up_factor, axis=0)
-            self.__class__._cached[state] = 2 * np.pi * np.rollaxis(movie[:self.tex_size[1], :self.tex_size[0]], 2)
-        return self._cached[state]
+        phase = Trippy._interp_time(
+            packed_phase_movie=self.packed_phase_movie, temp_kernel_length=self.temp_kernel_length, fps=self.fps,
+            duration=self.duration, temp_freq=self.temp_freq)
+        movie = np.rollaxis(phase.reshape([phase.shape[0]] + self.nodes[::-1], order='F'), 0, 3)
+        movie = Trippy._frozen_upscale(movie, self.up_factor, axis=1)
+        movie = Trippy._frozen_upscale(movie, self.up_factor, axis=0)
+        return 2 * np.pi * np.rollaxis(movie[:self.tex_size[1], :self.tex_size[0]], 2)
+
+    @property
+    def params(self):
+        """
+        :return: dict summarizing the stimulus
+        """
+        return dict(
+            packed_phase_movie=self.packed_phase_movie,
+            fps=self.fps,
+            tex_size=self.tex_size,
+            nodes=self.nodes,
+            up_factor=self.up_factor,
+            duration=self.duration,
+            temp_freq=self.temp_freq,
+            temp_kernel_length=self.temp_kernel_length,
+            spatial_freq=self.spatial_freq)
 
     @property
     def movie(self):
