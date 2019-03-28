@@ -1,5 +1,7 @@
 """
-This test relies on connectivity to the Cajal datajoint server to use experimental data
+This test relies on connectivity to the Cajal datajoint server to use experimental data.
+It validates that the Trippy stimulus produces the same movie as the stimulus program used in Cajal (in MATLAB)
+given the same parameters.
 """
 
 import numpy as np

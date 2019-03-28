@@ -9,13 +9,13 @@ import monet_trippy as mt
 # sessions that have both Monet and Trippy from a few recent experiments
 sessions = (fuse.Activity * stimulus.Sync & 'animal_id in (20505, 20322, 20457, 20210, 20892)'
             & (stimulus.Trial * stimulus.Monet2) & (stimulus.Trial * stimulus.Trippy)).fetch('KEY')
-key = sessions[2]   # pick one
+key = sessions[3]   # pick one
 
 print('load frame times.')
 pipe = (fuse.Activity() & key).module
 num_frames = (pipe.ScanInfo() & key).fetch1('nframes')
 num_depths = len(dj.U('z') & (pipe.ScanInfo.Field().proj('z', nomatch='field') & key))
-frame_times = (stimulus.Sync() & key).fetch1('frame_times', squeeze=True) # one per depth
+frame_times = (stimulus.Sync() & key).fetch1('frame_times', squeeze=True)  # one per depth
 assert num_frames <= frame_times.size / num_depths <= num_frames + 1
 frame_times = frame_times[:num_depths * num_frames:num_depths]  # one per volume
 
@@ -34,10 +34,16 @@ else:
     np.savez_compressed(archive, trace_keys=trace_keys, traces=traces, ms_delay=ms_delay)
 frame_times = np.add.outer(ms_delay / 1000, frame_times)  # num_traces x num_frames
 
-print('create Trippy session and load trials')
+print('create session and load trials')
 session = mt.VisualSession(np.stack(traces), frame_times)
+
+print('load trippy trials')
 for trial in (stimulus.Trial * stimulus.Condition * stimulus.Trippy & key).proj(..., '- movie'):
     session.add_trial(mt.Trippy.from_condition(trial), trial['flip_times'].flatten())
+
+print('load monet trials')
+for trial in (stimulus.Trial * stimulus.Condition * stimulus.Monet2 & key):
+    session.add_trial(mt.Monet2.from_condition(trial), trial['flip_times'].flatten())
 
 folder = os.path.join(os.path.abspath('..'), 'data', 'sessions', dj.hash.key_hash(key)[:6])
 print('save session', folder)

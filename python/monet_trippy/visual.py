@@ -66,8 +66,21 @@ class Trippy(Visual):
         self.temp_kernel_length = temp_kernel_length
         self.spatial_freq = spatial_freq
 
-        self._phase_movie = None
-
+    @property
+    def params(self):
+        """
+        :return: dict summarizing the stimulus
+        """
+        return dict(
+            packed_phase_movie=self.packed_phase_movie,
+            fps=self.fps,
+            tex_size=self.tex_size,
+            nodes=self.nodes,
+            up_factor=self.up_factor,
+            duration=self.duration,
+            temp_freq=self.temp_freq,
+            temp_kernel_length=self.temp_kernel_length,
+            spatial_freq=self.spatial_freq)
 
     @classmethod
     def from_condition(cls, cond):
@@ -131,22 +144,6 @@ class Trippy(Visual):
         movie = Trippy._frozen_upscale(movie, self.up_factor, axis=1)
         movie = Trippy._frozen_upscale(movie, self.up_factor, axis=0)
         return 2 * np.pi * np.rollaxis(movie[:self.tex_size[1], :self.tex_size[0]], 2)
-
-    @property
-    def params(self):
-        """
-        :return: dict summarizing the stimulus
-        """
-        return dict(
-            packed_phase_movie=self.packed_phase_movie,
-            fps=self.fps,
-            tex_size=self.tex_size,
-            nodes=self.nodes,
-            up_factor=self.up_factor,
-            duration=self.duration,
-            temp_freq=self.temp_freq,
-            temp_kernel_length=self.temp_kernel_length,
-            spatial_freq=self.spatial_freq)
 
     @property
     def movie(self):
