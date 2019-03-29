@@ -4,4 +4,5 @@ __all__ = ['VisualSession', 'Trippy', 'Monet2']
 
 
 from .session import VisualSession
-from .visual import Trippy, Monet2
+from .trippy import Trippy
+from .monet import Monet2
