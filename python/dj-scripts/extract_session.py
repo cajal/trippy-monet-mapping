@@ -1,15 +1,18 @@
 import datajoint as dj
 import numpy as np
+import warnings
 import os
+import json
 from stimulus import stimulus
 from pipeline import fuse
+from tqdm import tqdm
 
 import monet_trippy as mt
 
 # sessions that have both Monet and Trippy from a few recent experiments
 sessions = (fuse.Activity * stimulus.Sync & 'animal_id in (20505, 20322, 20457, 20210, 20892)'
             & (stimulus.Trial * stimulus.Monet2) & (stimulus.Trial * stimulus.Trippy)).fetch('KEY')
-key = sessions[3]   # pick one
+key = sessions[0]   # pick one
 
 print('load frame times.')
 pipe = (fuse.Activity() & key).module
@@ -38,13 +41,22 @@ print('create session and load trials')
 session = mt.VisualSession(np.stack(traces), frame_times)
 
 print('load trippy trials')
-for trial in (stimulus.Trial * stimulus.Condition * stimulus.Trippy & key).proj(..., '- movie'):
-    session.add_trial(mt.Trippy.from_condition(trial), trial['flip_times'].flatten())
+for trial in tqdm((stimulus.Trial * stimulus.Condition * stimulus.Trippy & key).proj(..., '- movie')):
+    try:
+        session.add_trial(mt.Trippy.from_condition(trial), trial['flip_times'].flatten())
+    except IndexError:
+        warnings.warn('Invalid trial.')
 
 print('load monet trials')
-for trial in (stimulus.Trial * stimulus.Condition * stimulus.Monet2 & key):
-    session.add_trial(mt.Monet2.from_condition(trial), trial['flip_times'].flatten())
+for trial in tqdm((stimulus.Trial * stimulus.Condition * stimulus.Monet2 & key)):
+    try:
+        session.add_trial(mt.Monet2.from_condition(trial), trial['flip_times'].flatten())
+    except IndexError:
+        warnings.warn('Invalid trial.')
 
 folder = os.path.join(os.path.abspath('..'), 'data', 'sessions', dj.hash.key_hash(key)[:6])
 print('save session', folder)
+
 session.save(folder)
+with open(os.path.join(folder, 'cajal.json')) as f:
+    json.dump(key, f)

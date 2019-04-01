@@ -7,10 +7,10 @@ class Monet2(Visual):
 
     _parameter_names = re.split(
         r',\s*', 'rng_seed, pattern_width, pattern_aspect, temp_kernel, temp_bandwidth, '
-                 'ori_coherence, ori_fraction, ori_mix, n_dirs, speed, direction, onsets')
+                 'ori_coherence, ori_fraction, ori_mix, n_dirs, speed, directions, onsets')
 
     def __init__(self, rng_seed, pattern_width, pattern_aspect, temp_kernel, temp_bandwidth,
-                 ori_coherence, ori_fraction, ori_mix, n_dirs, speed, direction, onsets, movie):
+                 ori_coherence, ori_fraction, ori_mix, n_dirs, speed, directions, onsets, movie):
         """
         :param rng_seed:
         :param pattern_width:
@@ -22,7 +22,7 @@ class Monet2(Visual):
         :param ori_mix:
         :param n_dirs:
         :param speed:
-        :param direction:
+        :param directions:
         :param onsets:
         :param movie: (generated from above parameters in MATLAB only for now)
         """
@@ -36,9 +36,10 @@ class Monet2(Visual):
         self.ori_mix = ori_mix
         self.n_dirs = n_dirs
         self.speed = speed
-        self.direction = direction
+        self.directions = directions
         self.onsets = onsets
-        self.movie = movie
+        self._movie = movie
+        self.nframes = self._movie.shape[2]
 
     @property
     def params(self):
@@ -50,3 +51,7 @@ class Monet2(Visual):
         assert condition['blue_green_saturation'] == 0, "This code is for grayscale only"
         return cls(**{k: v for k, v in condition.items() if k in cls._parameter_names},
                    movie=condition['movie'].squeeze())
+
+    @property
+    def movie(self):
+        return self._movie

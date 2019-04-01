@@ -31,6 +31,7 @@ class VisualSession:
 
     def save(self, folder):
         os.makedirs(folder, exist_ok=True)
+
         trial_folder = os.path.join(folder, 'trials')
         stim_folder = os.path.join(folder, 'stims')
         os.path.isdir(trial_folder) or os.mkdir(trial_folder)
