@@ -2,12 +2,11 @@ import re
 from .visual import Visual
 
 
-
 class Monet2(Visual):
 
     _parameter_names = re.split(
         r',\s*', 'rng_seed, pattern_width, pattern_aspect, temp_kernel, temp_bandwidth, '
-                 'ori_coherence, ori_fraction, ori_mix, n_dirs, speed, directions, onsets')
+                 'ori_coherence, ori_fraction, ori_mix, n_dirs, speed, directions, onsets, _movie')
 
     def __init__(self, rng_seed, pattern_width, pattern_aspect, temp_kernel, temp_bandwidth,
                  ori_coherence, ori_fraction, ori_mix, n_dirs, speed, directions, onsets, movie):

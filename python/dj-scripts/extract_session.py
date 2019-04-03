@@ -18,7 +18,6 @@ for key in sessions:
     folder = os.path.join(os.path.abspath('..'), 'data', 'sessions', dj.hash.key_hash(key)[:6])
     if os.path.isdir(folder):
         continue
-
     print('load frame times.')
     pipe = (fuse.Activity() & key).module
     num_frames = (pipe.ScanInfo() & key).fetch1('nframes')
@@ -55,12 +54,9 @@ for key in sessions:
     print('load monet trials')
     cache = {}
     for trial in tqdm((stimulus.Trial * stimulus.Condition & stimulus.Monet2 & key)):
-        try:
-            if trial['condition_hash'] not in cache:
-                cache[trial['condition_hash']] = mt.Monet2.from_condition((stimulus.Condition * stimulus.Monet2 & trial).fetch1())
-            session.add_trial(cache[trial['condition_hash']], trial['flip_times'].flatten())
-        except IndexError:
-            warnings.warn('Invalid trial.')
+        if trial['condition_hash'] not in cache:
+            cache[trial['condition_hash']] = mt.Monet2.from_condition((stimulus.Condition * stimulus.Monet2 & trial).fetch1())
+        session.add_trial(cache[trial['condition_hash']], trial['flip_times'].flatten())
 
     print('save session', folder)
     session.save(folder)

@@ -43,7 +43,8 @@ class VisualSession:
         for trial in self.trials:
             stim_class = trial['stimulus'].__class__.__name__
             params = trial['stimulus'].params
-            stim_hash = hashlib.md5(pickle.dumps([v for k, v in sorted(params.items())])).hexdigest()[:8]
+            stim_hash = hashlib.md5(pickle.dumps(
+                [v for k, v in sorted(params.items()) if not k.startswith('_')])).hexdigest()[:8]
             np.savez(os.path.join(trial_folder, 'trial-%08.3f.npz' % trial['times'][0]),
                      times=trial['times'],
                      stim_class=stim_class,
@@ -56,8 +57,10 @@ class VisualSession:
         :param stimulus: an object of type StimulusMovie
         :param frame_times: (s) array of size (T,)
         """
-        if stimulus.nframes != frame_times.size:
-            raise IndexError('frame times must match stimulus movie')
+
+        if stimulus.nframes < frame_times.size:
+            frame_times = frame_times[stimulus.nframes:]
+            assert np.diff(frame_times).max() < 0.04
         self.trials.append({'stimulus': stimulus, 'times': frame_times - self.start_time})
 
     def compute_receptive_field(self, shape=None, temp_band=4.0, latency=0.15):
