@@ -14,6 +14,7 @@ sessions = (fuse.Activity * stimulus.Sync & 'animal_id in (20505, 20322, 20457, 
             & (stimulus.Trial * stimulus.Monet2) & (stimulus.Trial * stimulus.Trippy)).fetch('KEY')
 key = sessions[2]   # pick one
 
+cache = {}
 for key in sessions:
     folder = os.path.join(os.path.abspath('..'), 'data', 'sessions', dj.hash.key_hash(key)[:6])
     if os.path.isdir(folder):
@@ -52,7 +53,6 @@ for key in sessions:
             warnings.warn('Invalid trial.')
 
     print('load monet trials')
-    cache = {}
     for trial in tqdm((stimulus.Trial * stimulus.Condition & stimulus.Monet2 & key)):
         if trial['condition_hash'] not in cache:
             cache[trial['condition_hash']] = mt.Monet2.from_condition((stimulus.Condition * stimulus.Monet2 & trial).fetch1())
