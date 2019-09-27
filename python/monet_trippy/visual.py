@@ -1,8 +1,7 @@
-import imageio
 
 class Visual:
     """
-    Abstract stimulus movie
+    Abstract stimulus movie for computing receptive fields
     """
     @property
     def params(self):
@@ -20,6 +19,10 @@ class Visual:
         """
         :return: uint8 grayscale movie of size (nframes, ny, nx)
         """
+        raise NotImplementedError("This property must be implemented by subclasses")
+
+    @property
+    def fps(self):
         raise NotImplementedError("This property must be implemented by subclasses")
 
     def export(self, filename=None, suffix='', **kwargs):

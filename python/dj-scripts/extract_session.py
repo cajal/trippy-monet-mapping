@@ -1,3 +1,9 @@
+"""
+This script relies on connectivity to the Cajal datajoint server to use experimental data.
+It extracts data from the database and saves into a collection of npy files for sharing.
+"""
+
+
 import datajoint as dj
 import numpy as np
 import warnings
@@ -10,6 +16,7 @@ from tqdm import tqdm
 import monet_trippy as mt
 
 # sessions that have both Monet and Trippy from a few recent experiments
+animals = (20505, 20322, 20457, 20210, 20892)
 sessions = (fuse.Activity * stimulus.Sync & 'animal_id in (20505, 20322, 20457, 20210, 20892)'
             & (stimulus.Trial * stimulus.Monet2) & (stimulus.Trial * stimulus.Trippy)).fetch('KEY')
 key = sessions[2]   # pick one
