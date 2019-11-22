@@ -15,6 +15,9 @@ from tqdm import tqdm
 
 import monet_trippy as mt
 
+data_root_path = '/media/dimitri/Untitled/trippy-data'
+cache_path = '/media/dimitri/Untitled/cache'
+
 # sessions that have both Monet and Trippy from a few recent experiments
 animals = (20505, 20322, 20457, 20210, 20892)
 sessions = (fuse.Activity * stimulus.Sync & 'animal_id in (20505, 20322, 20457, 20210, 20892)'
@@ -23,7 +26,7 @@ key = sessions[2]   # pick one
 
 cache = {}
 for key in sessions:
-    folder = os.path.join(os.path.abspath('..'), 'data', 'sessions', dj.hash.key_hash(key)[:6])
+    folder = os.path.join(os.path.abspath(data_root_path), 'sessions', dj.hash.key_hash(key)[:6])
     if os.path.isdir(folder):
         continue
     print('load frame times.')
@@ -36,9 +39,9 @@ for key in sessions:
 
     print('load and cache soma traces')
     trace_hash = dj.hash.key_hash({k: v for k, v in key.items() if k not in {'stimulus_type'}})
-    archive = os.path.join('cache', trace_hash + '-traces.npz')
+    archive = os.path.join(cache_path, trace_hash + '-traces.npz')
     if os.path.isfile(archive):
-        data = np.load(archive)
+        data = np.load(archive, allow_pickle=True)
         trace_keys = data['trace_keys']
         traces = data['traces']
         ms_delay = data['ms_delay']

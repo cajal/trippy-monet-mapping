@@ -32,7 +32,7 @@ class Trippy(Visual):
             scale = compensator * up_factor * spatial_freq
             self.packed_phase_movie = (
                     scale * np.random.rand(int(np.ceil((self.nframes + temp_kernel_length - 1) / k2)), nodes[0] * nodes[1]))
-        self.fps = float(fps)
+        self._fps = float(fps)
         self.tex_size = list(tex_size)
         self.nodes = list(nodes)
         self.up_factor = up_factor
@@ -40,6 +40,10 @@ class Trippy(Visual):
         self.temp_freq = temp_freq
         self.temp_kernel_length = temp_kernel_length
         self.spatial_freq = spatial_freq
+
+    @property
+    def fps(self):
+        return self._fps
 
     @property
     def params(self):
