@@ -13,20 +13,20 @@ class VisualSession:
     A collection of movie clips synchronized with a collection of neural signals
     """
 
-    def __init__(self, traces: np.ndarray, times: np.ndarray):
+    def __init__(self, traces: np.ndarray, times: np.ndarray, delays: np.ndarray):
         """
-        :param traces: array of size (T,) or (N, T) array where T = number of time samples, N = number of units
-        :param times: array of size (T,) or (N, T) with sample times of the traces
+        :param traces: array of size (N, T) array where T = number of time samples, N = number of units
+        :param times: array of size (T,) or with sample times of the traces
+        :param delays: array of size (N,) with relative delays for each unit
         """
+        assert times.ndim == 1, 'time must have one dimensions'
+        assert traces.ndim == 2, 'traces must be a 2D matrix'
         if traces.ndim == 1:
             traces = traces[None, :]
-        if times.ndim == 1:
-            times = times[None, :]
-        if traces.shape[1] != times.shape[1]:
-            raise TypeError('The number of samples in the traces does not match the number of timestamps')
         self.traces = traces
         self.start_time = times.min()
         self.times = times - self.start_time
+        self.delays = delays
         self.trials = []
 
     def save(self, folder):
@@ -38,7 +38,8 @@ class VisualSession:
         os.path.isdir(stim_folder) or os.mkdir(stim_folder)
 
         # save traces and times
-        np.savez(os.path.join(folder, 'traces.npz'), traces=self.traces, times=self.times)
+        np.savez(os.path.join(folder, 'traces.npz'), traces=self.traces, times=self.times, delays=self.delays)
+
         # save trials
         for trial in self.trials:
             stim_class = trial['stimulus'].__class__.__name__
