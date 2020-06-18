@@ -8,6 +8,7 @@ from skimage import transform
 
 from .visual import Visual
 
+
 class VisualSession:
     """
     A collection of movie clips synchronized with a collection of neural signals
