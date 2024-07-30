@@ -85,15 +85,14 @@ class Trippy(Visual):
             array, factor, 1, window=[0] * phase * 2 + [1 / factor], axis=axis)
 
     @staticmethod
-    def _interp_time(packed_phase_movie, temp_kernel_length, nframes, fps, temp_freq):
+    def _interp_time(packed_phase_movie, temp_kernel_length, fps, temp_freq):
         assert temp_kernel_length >= 3 and temp_kernel_length % 2 == 1
         k2 = int(np.ceil(temp_kernel_length / 4))
         phase = Trippy._upsample(packed_phase_movie, k2)
         temp_kernel = np.hanning(temp_kernel_length + 2)[1:-1]
         temp_kernel *= k2 / temp_kernel.sum()
         phase = signal.convolve(phase, temp_kernel[:, None], 'valid')  # lowpass in time
-        assert nframes == phase.shape[0]
-        return phase + (np.r_[:nframes][:, None] + 1) / np.float(fps) * np.float(temp_freq)  # add motion
+        return phase + (np.r_[:phase.shape[0]][:, None] + 1) / float(fps) * float(temp_freq)  # add motion
 
     @staticmethod
     def _frozen_upscale(img, factor, axis):
@@ -108,7 +107,7 @@ class Trippy(Visual):
         img = Trippy._upsample(img, factor, axis, phase=factor // 2)
         length = img.shape[axis]
         sigma = (length - 1) / (2 * np.sqrt(0.5) * length / factor)
-        k = signal.gaussian(length, sigma)
+        k = signal.windows.gaussian(length, sigma)
         k = np.fft.fft(np.fft.ifftshift(factor * k / k.sum()))
         k = k.reshape([1] * axis + list(k.shape) + [1] * (img.ndim - 1 - axis))
         return np.real(np.fft.ifft(np.fft.fft(img, axis=axis) * k, axis=axis))
@@ -120,7 +119,7 @@ class Trippy(Visual):
         """
         phase = Trippy._interp_time(
             packed_phase_movie=self.packed_phase_movie, temp_kernel_length=self.temp_kernel_length,
-            fps=self.fps, nframes=self.nframes, temp_freq=self.temp_freq)
+            fps=self.fps, temp_freq=self.temp_freq)
         movie = np.rollaxis(phase.reshape([phase.shape[0]] + self.nodes[::-1], order='F'), 0, 3)
         movie = Trippy._frozen_upscale(movie, self.up_factor, axis=1)
         movie = Trippy._frozen_upscale(movie, self.up_factor, axis=0)
