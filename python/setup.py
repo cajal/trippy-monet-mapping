@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+from setuptools import setup, find_packages
+from os import path
+
+here = path.abspath(path.dirname(__file__))
+
+long_description = "Synthesis and analysis of visual stimuli Monet and Trippy for computing visual tuning."
+
+
+setup(
+    name='monet_trippy',
+    version='0.1.0',
+    description="Monet and Trippy stimuli: synthesis and analysis.",
+    long_description=long_description,
+    author='Dimitri Yatsenko',
+    author_email='dvyatsen@bcm.edu',
+    license="GNU LGPL",
+    url='https://github.com/cajal/trippy-monet',
+    keywords='neuroscientific data processing',
+    packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
+    install_requires=['numpy', 'scipy', 'matplotlib', 'pandas', 'seaborn',
+                      'imageio','scikit-image', 'scikit-learn'],
+    classifiers=[
+        'Development Status :: 1 - Beta',
+        'Intended Audience :: Science/Research',
+        'Programming Language :: Python :: 3.6 :: Only',
+        'License :: OSI Approved :: GNU LGPL',
+        'Topic :: Database :: Front-Ends',
+    ],
+    scripts=[]
+)
+
